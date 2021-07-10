@@ -1,3 +1,4 @@
+from os import remove
 import numpy as np
 import copy
 import sys
@@ -34,7 +35,7 @@ def buscar(nodo,nodos_totales):
 	return nodos_totales
 
 def barrio_aislado(linea,nodos_totales):
-	for i in range(len(linea)):
+	for i in range(len(linea)): #recorro los nodos o la zonas que recorro en la ruta
 		nodos_totales=buscar(linea[i],nodos_totales)
 
 	return nodos_totales
@@ -74,57 +75,78 @@ def repetidos(ruta,nodo):
 	return False
 
 
-def conexion(ruta1,ruta2,conexiones):
-	for i in range(len(ruta1)):
-		for j in range(len(ruta2)):
+def conexion(ruta1,ruta2): # devuelve true si existe algun nodo en comun
+	for i in range(1,len(ruta1)-1): #recorro todos los nodos excepto el primer nodo
+		for j in range(1,len(ruta2)-1): #recorro todos los nodos excepto el primero
 			if ruta1[i]==ruta2[j]:
 				return True
 
 	return False
 
 def ruta_aislada(individuo):
-	size=len(individuo)
-	conexiones=[]
-	for i in range(size-1):
-		for j in range(i+1,size):
-			if conexion(individuo[i],individuo[j],conexiones):
-				if not repetidos(conexiones,i):
-					conexiones.append(i)
-				if not repetidos(conexiones,j):
-					conexiones.append(j)
-
-	if len(conexiones)==size:
-		return False
-
-	return True
+	size=len(individuo) #cantidad de rutas que tiene
+	for i in range(size-1): #recorro las rutas del individuo menos 1 
+		for j in range(i+1,size): #recorro las rutas a partir de la ruta indexada con i
+			if conexion(individuo[i],individuo[j]):
+				return True #retorna true si existe alguna ruta conectada
+	return False #retorna false si no tiene rutas conectadas
 
 def individuo_valido(individuo):
-	nodos_totales=copy.copy(nodos)
-	for i in range(len(individuo)):
-		nodos_totales=barrio_aislado(individuo[i],nodos_totales)
+	nodos_totales=copy.copy(nodos) #copio los nodos en una lista de nodos_totales
+	for i in range(len(individuo)): #recorro todas las rutas del individuo
+		nodos_totales=barrio_aislado(individuo[i],nodos_totales) #le voy quitando todos los nodos que recorro con las rutas de mi individuo
 
-	ra=not ruta_aislada(individuo)
-	ba=not len(nodos_totales)
-	rp=not rutas_repetidas(individuo)
+	ra=not ruta_aislada(individuo) #el individuo es valido cuando tiene todas sus rutas aisladas
+	ba=not len(nodos_totales) # el individuo es valido cuando recorre todo el espacio 
+	rp=not rutas_repetidas(individuo) # el individuo es valido cuando no tiene rutas repetidas
 
 	return ba and ra and rp
 
 def generar_ruta():
 	ruta=[]
-	size_ruta=np.random.randint(nodos_minimo,n_nodos)
-	temp=copy.copy(nodos)
+	size_ruta=np.random.randint(nodos_minimo,n_nodos) # al azar se escoge el tamaño que va a tener una ruta
+	temp=copy.copy(nodos) # se copia la matriz de nodos en una variable temporal
 	for j in range(size_ruta):
-		nodo=np.random.choice(temp)
-		temp.remove(nodo)
-		ruta.append(nodo)
-
+		nodo=np.random.choice(temp) #se escoge un nodo al azar para formar la ruta
+		temp.remove(nodo) #se remueve el nodo del arreglo de nodos para que ya no sea escogido
+		ruta.append(nodo) # se agrega el nodo recorrido
 	return ruta
+def buscaUltimo(linea):
+	for i in range(len(linea)):
+		ultimo = i
+	return linea[ultimo]
 
-def generar_lineas(n_lineas):
+def escogerMejorRutaInsertar(lineas,nodo):
+	valorMax = 0
+	mejorRuta = -1#inicializo con una lista vacia
+	for i in range(len(lineas)):
+		nodoIni = buscaUltimo(lineas[i])
+		atencion = pasajeros[nodoIni][nodo] # calculo la cantidad de pasajeros que atiendo
+		distancia = distancias[nodoIni][nodo] #calculo la distancia recorrida
+		valor = atencion/distancia
+		if valor > valorMax and valor > 0.5 : 
+			mejorRuta = i #almaceno la linea de mayor valor
+
+	return mejorRuta
+def insertarNodo(linea,nodo):
+	linea.append(nodo)
+
+def generarRuta(nodo):
+	linea=[0,nodo]
+	return linea
+
+def generar_individuo():
 	lineas=[]
-	for i in range(n_lineas):
-		lineas.append(generar_ruta())
-
+	temp = copy.copy(nodos)
+	temp.remove(0)
+	for i in range(len(temp)):
+		nodo = np.random.choice(temp) #se escoge un nodo al azar
+		mejorLinea = escogerMejorRutaInsertar(lineas,nodo) #funcion que regresa la mejor linea para insertar
+		temp.remove(nodo)
+		if mejorLinea != -1 :
+			insertarNodo(lineas[mejorLinea],nodo)
+		elif len(lineas) <=  max_rutas :
+			lineas.append(generarRuta(nodo))
 	return lineas, individuo_valido(lineas)
 
 def fitness(individuo,m_distancias):
@@ -161,20 +183,19 @@ def calc_fitness(individuo,f_e):
 
 
 def generar_poblacion(size):
-	print "************************************ Primera Poblacion *************************************"
+	print ("************************************ Primera Poblacion *************************************")
 	poblacion=[]
 	fit_poblacion=[]
 	i=0
-	while i<size:
-		size_lineas=np.random.randint(min_rutas,max_rutas)
-		lineas,valido=generar_lineas(size_lineas)
+	while i<size: #vamos a generar una cantidad determinada de individuos (25)
+		individuo,valido=generar_individuo() #algoritmo PIA
 		while not valido:
-			mutacion_individual(lineas)
-			valido=individuo_valido(lineas)
+			mutacion_individual(individuo)
+			valido=individuo_valido(individuo)
 
-		poblacion.append(lineas)
-		fit_poblacion.append(calc_fitness(lineas,f_ecologia))
-		print i+1,"Individuo Aceptado:",poblacion[i], "fit", fit_poblacion[i]
+		poblacion.append(individuo)
+		fit_poblacion.append(calc_fitness(individuo,f_ecologia))
+		print (i+1,"Individuo Aceptado:",poblacion[i], "fit", fit_poblacion[i])
 		i+=1
 
 	return poblacion, fit_poblacion
@@ -197,26 +218,25 @@ def mutacion(individuo,long_original):
 			aleatorio=np.random.uniform(0,1)
 			if aleatorio<pm:
 				individuo[i]=mutar()
-		del individuo[nueva_longitud:]
-	else:
-		j=0
-		for i in range(nueva_longitud):
-			if j<long_original:
-				aleatorio=np.random.uniform(0,1)
- 				if aleatorio<pm:
- 					individuo[i]=mutar()
-				j+=1
-			else:
-				individuo.append(mutar())
-
+			del individuo[nueva_longitud]
+		else:
+			j=0
+			for i in range(nueva_longitud):
+				if j<long_original:
+					aleatorio=np.random.uniform(0,1)
+					if aleatorio<pm:
+						individuo[i]=mutar()
+					j+=1
+				else:
+					individuo.append(mutar())
 
 def mutacion_individual(individuo):
 	longitud=len(individuo)
 	aleatorio=np.random.uniform(0,1)
 	if aleatorio<pm:
-		print "Individuo:",individuo, "fit:", calc_fitness(individuo,f_ecologia)
+		print ("Individuo:",individuo, "fit:", calc_fitness(individuo,f_ecologia))
 		mutacion(individuo,longitud)
-		print "Individuo Mutado:",individuo, "fit:", calc_fitness(individuo,f_ecologia)
+		print ("Individuo Mutado:",individuo, "fit:", calc_fitness(individuo,f_ecologia))
 
 
 def mutacion_poblacion(poblacion):
@@ -225,8 +245,8 @@ def mutacion_poblacion(poblacion):
 
 
 def crear_grafo(nodos):
-        grafo = [[0 for columna in range(nodos)]
-                      for fila in range(nodos)]
+	grafo = [[0 for columna in range(nodos)
+					for fila in range(nodos)]]
 	return grafo
 
 def imprimir(dist):
@@ -244,23 +264,16 @@ def distancia_min(dist, nv):
         return min_indice
 
 def dijkstra(inicio,grafo,matriz_dist):
-
-        dist = [100000000] * n_nodos
-        dist[inicio] = 0
-        nv = [False] * n_nodos
-
-        for i in range(n_nodos):
-
-            a = distancia_min(dist, nv)
-
-            nv[a] = True
-
-            for b in range(n_nodos):
-                if grafo[a][b] > 0 and nv[b] == False and dist[b] > dist[a] + grafo[a][b]:
-                        dist[b] = dist[a] + grafo[a][b]
-
+	dist = [100000000]*n_nodos
+	dist[inicio] = 0
+	nv = [False]*n_nodos
+	for i in range(n_nodos):
+		a=distancia_min(dist,nv)
+		nv[a]=True
+		for b in range(n_nodos):
+			if grafo[a][b] > 0 and nv[b] == False and dist[b] > dist[a] + grafo[a][b]:
+				dist[b] = dist[a] + grafo[a][b]
 	matriz_dist.append(dist)
-        #imprimir(dist)
 
 def iniciar_dijkstra(grafo):
 	matriz_dist=[]
@@ -315,19 +328,19 @@ def cruce(individuo1,individuo2):
 def cruzar(individuo1,individuo2):
 	aleatorio=np.random.uniform(0,1)
 	if aleatorio<pc:
-		print "Individuo elegido:", individuo1, "fit:",calc_fitness(individuo1,f_ecologia)
-		print "Individuo elegido:", individuo2, "fit:",calc_fitness(individuo2,f_ecologia)
+		print ("Individuo elegido:", individuo1, "fit:",calc_fitness(individuo1,f_ecologia))
+		print ("Individuo elegido:", individuo2, "fit:",calc_fitness(individuo2,f_ecologia))
 		pos_cruce1=np.random.randint(len(individuo1))
 		pos_cruce2=np.random.randint(len(individuo2))
-		print "Cruzamiento en:", individuo1[pos_cruce1]
-		print "Cruzamiento en:", individuo2[pos_cruce2]
+		print ("Cruzamiento en:", individuo1[pos_cruce1])
+		print ("Cruzamiento en:", individuo2[pos_cruce2])
 		temp=cruce(individuo1[pos_cruce1],individuo2[pos_cruce2])
-		print "Cruce:", temp
+		print ("Cruce:", temp)
 		individuo2[pos_cruce2]=cruce(individuo1[pos_cruce1],individuo2[pos_cruce2])
-		print "Cruce:",individuo2[pos_cruce2]
+		print ("Cruce:",individuo2[pos_cruce2])
 		individuo1[pos_cruce1]=temp
-		print "Individuo cruzado:", individuo1, "fit:",calc_fitness(individuo1,f_ecologia)
-		print "Individuo cruzado:", individuo2, "fit:",calc_fitness(individuo2,f_ecologia)
+		print ("Individuo cruzado:", individuo1, "fit:",calc_fitness(individuo1,f_ecologia))
+		print ("Individuo cruzado:", individuo2, "fit:",calc_fitness(individuo2,f_ecologia))
 		print
 
 
@@ -350,7 +363,7 @@ def cruzamiento(poblacion,fit_p,participantes):
 def validar_poblacion(poblacion):
 	fit_poblacion=[]
 	print
-	print "********************************* Poblacion Valida *************************************"
+	print ("********************************* Poblacion Valida *************************************")
 	for i in range(n_individuos):
 		valido=individuo_valido(poblacion[i])
 		while not valido:
@@ -358,43 +371,42 @@ def validar_poblacion(poblacion):
 			valido=individuo_valido(poblacion[i])
 
 		fit_poblacion.append(calc_fitness(poblacion[i],f_ecologia))
-		print i+1, poblacion[i], "fit:",fit_poblacion[i]
+		print (i+1, poblacion[i], "fit:",fit_poblacion[i])
 
 	return poblacion,fit_poblacion
 
 
 def algorimo_genetico(n_individuos,f_ecologia,n_participantes,n_iteraciones):
-	print
-	poblacion,fit=generar_poblacion(n_individuos)
+
 	for i in range(n_iteraciones):
 		print
-		print "************************************* Iteracion:",i+1,"**************************************"
+		print ("************************************* Iteracion:",i+1,"**************************************")
 		print
-		print "************************************* Cruzamiento **************************************"
+		print ("************************************* Cruzamiento **************************************")
 
 		poblacion=cruzamiento(poblacion,fit,n_participantes)
 		print
-		print "************************************* Mutacion **************************************"
+		print ("************************************* Mutacion **************************************")
 		mutacion_poblacion(poblacion)
 		poblacion,fit_p=validar_poblacion(poblacion)
 		fit=fit_p
 		ordenar=list(np.argsort(fit_p))
 		ordenar.reverse()
 		print
-		print ordenar[0]+1,"Mejor:",poblacion[ordenar[0]], fit_p[ordenar[0]]
+		print (ordenar[0]+1,"Mejor:",poblacion[ordenar[0]], fit_p[ordenar[0]])
 
 	print
-	print "***************************** Ultima Poblacion *********************************"
+	print ("***************************** Ultima Poblacion *********************************")
 	for i in range(n_individuos):
-		print i+1,poblacion[i], "fit: ",fit_p[i]
+		print (i+1,poblacion[i], "fit: ",fit_p[i])
 	print
-	print ordenar[0]+1,"Mejor Solucion:",poblacion[ordenar[0]], fit_p[ordenar[0]]
+	print (ordenar[0]+1,"Mejor Solucion:",poblacion[ordenar[0]], fit_p[ordenar[0]])
 
 
 
 n_nodos=len(distancias)
 nodos=range(n_nodos)
-
+nodos=list(nodos)
 grafo=crear_grafo(n_nodos)
 grafo = distancias
 m_distancias=iniciar_dijkstra(grafo)
@@ -408,5 +420,14 @@ n_participantes=3
 pm=0.3
 pc=0.5
 n_iteraciones=50
-algorimo_genetico(n_individuos,f_ecologia,n_participantes,n_iteraciones)
+valores=[]
+for i in range(n_nodos):
+	for j in range(n_nodos):
+		if i != j : 
+			valor = pasajeros[i][j] / distancias[i][j]
+			valores.append(valor)
+
+print
+poblacion,fit=generar_poblacion(n_individuos)
+#algorimo_genetico(n_individuos,f_ecologia,n_participantes,n_iteraciones,poblacion,fit)
 
