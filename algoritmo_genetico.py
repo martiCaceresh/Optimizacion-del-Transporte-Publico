@@ -170,15 +170,10 @@ def fitness(individuo,m_distancias):
 	return fit
 
 
-def calc_fitness(individuo,f_e):
+def calc_fitness(individuo):
 	fit=fitness(individuo,m_distancias)
 	num_lineas=(1.0*len(individuo))/(max_rutas-min_rutas)
-	es_valido=individuo_valido(individuo)
-	penalizacion_inv=0
-	if not es_valido:
-		penalizacion_inv=1000000
-
-	optimizacion=fit-fit*f_e*num_lineas-penalizacion_inv
+	optimizacion=fit-fit*num_lineas
 	return optimizacion
 
 
@@ -194,7 +189,7 @@ def generar_poblacion(size):
 			valido=individuo_valido(individuo)
 
 		poblacion.append(individuo)
-		fit_poblacion.append(calc_fitness(individuo,f_ecologia))
+		fit_poblacion.append(calc_fitness(individuo))
 		print (i+1,"Individuo Aceptado:",poblacion[i], "fit", fit_poblacion[i])
 		i+=1
 
@@ -234,9 +229,9 @@ def mutacion_individual(individuo):
 	longitud=len(individuo)
 	aleatorio=np.random.uniform(0,1)
 	if aleatorio<pm:
-		print ("Individuo:",individuo, "fit:", calc_fitness(individuo,f_ecologia))
+		print ("Individuo:",individuo, "fit:", calc_fitness(individuo))
 		mutacion(individuo,longitud)
-		print ("Individuo Mutado:",individuo, "fit:", calc_fitness(individuo,f_ecologia))
+		print ("Individuo Mutado:",individuo, "fit:", calc_fitness(individuo))
 
 
 def mutacion_poblacion(poblacion):
@@ -328,8 +323,8 @@ def cruce(individuo1,individuo2):
 def cruzar(individuo1,individuo2):
 	aleatorio=np.random.uniform(0,1)
 	if aleatorio<pc:
-		print ("Individuo elegido:", individuo1, "fit:",calc_fitness(individuo1,f_ecologia))
-		print ("Individuo elegido:", individuo2, "fit:",calc_fitness(individuo2,f_ecologia))
+		print ("Individuo elegido:", individuo1, "fit:",calc_fitness(individuo1))
+		print ("Individuo elegido:", individuo2, "fit:",calc_fitness(individuo2))
 		pos_cruce1=np.random.randint(len(individuo1))
 		pos_cruce2=np.random.randint(len(individuo2))
 		print ("Cruzamiento en:", individuo1[pos_cruce1])
@@ -339,8 +334,8 @@ def cruzar(individuo1,individuo2):
 		individuo2[pos_cruce2]=cruce(individuo1[pos_cruce1],individuo2[pos_cruce2])
 		print ("Cruce:",individuo2[pos_cruce2])
 		individuo1[pos_cruce1]=temp
-		print ("Individuo cruzado:", individuo1, "fit:",calc_fitness(individuo1,f_ecologia))
-		print ("Individuo cruzado:", individuo2, "fit:",calc_fitness(individuo2,f_ecologia))
+		print ("Individuo cruzado:", individuo1, "fit:",calc_fitness(individuo1))
+		print ("Individuo cruzado:", individuo2, "fit:",calc_fitness(individuo2))
 		print
 
 
@@ -370,13 +365,13 @@ def validar_poblacion(poblacion):
 			mutacion_individual(poblacion[i])
 			valido=individuo_valido(poblacion[i])
 
-		fit_poblacion.append(calc_fitness(poblacion[i],f_ecologia))
+		fit_poblacion.append(calc_fitness(poblacion[i]))
 		print (i+1, poblacion[i], "fit:",fit_poblacion[i])
 
 	return poblacion,fit_poblacion
 
 
-def algorimo_genetico(n_individuos,f_ecologia,n_participantes,n_iteraciones):
+def algorimo_genetico(n_individuos,n_participantes,n_iteraciones):
 
 	for i in range(n_iteraciones):
 		print
@@ -415,7 +410,6 @@ max_rutas=n_nodos-1
 min_rutas=2
 nodos_minimo=2
 n_individuos=25
-f_ecologia=0
 n_participantes=3
 pm=0.3
 pc=0.5
@@ -429,5 +423,5 @@ for i in range(n_nodos):
 
 print
 poblacion,fit=generar_poblacion(n_individuos)
-#algorimo_genetico(n_individuos,f_ecologia,n_participantes,n_iteraciones,poblacion,fit)
+#algorimo_genetico(n_individuos,n_participantes,n_iteraciones,poblacion,fit)
 
