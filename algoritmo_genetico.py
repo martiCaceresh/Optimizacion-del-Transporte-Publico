@@ -353,7 +353,7 @@ def cruzamiento(poblacion,fit_p,participantes):
 
 		temp.append(ind)
 
-	for i in range(n_individuos/2):
+	for i in range(n_individuos//2):
 		ip1=torneo(temp,participantes,fit_p)
 		ip2=torneo(temp,participantes,fit_p)
 		cruzar(poblacion[ip1],poblacion[ip2])
@@ -375,13 +375,28 @@ def validar_poblacion(poblacion):
 
 	return poblacion,fit_poblacion
 
-
+def mejorIndividuo(fit:list):
+	mayorIndividuo = 0
+	for i in range(len(fit)):
+		if fit[i] > mayorIndividuo:
+			mayorIndividuo = fit[i]
+	return mayorIndividuo
+###### AQUI IMPLEMENTA LA FUNCION *******************
+#def seleccion(poblacion,fit):
+	
 def algorimo_genetico(n_individuos,n_participantes,n_iteraciones):
-
+	mejoresIndividuos=[]
+	print
+	poblacion,fit=generar_poblacion(n_individuos)
 	for i in range(n_iteraciones):
+		mejoresIndividuos.append(mejorIndividuo(fit))
 		print
 		print ("************************************* Iteracion:",i+1,"**************************************")
 		print
+		print ("************************************* Seleccion ****************************************")
+		print
+		#*******BRUNO CREATE LA FUNCION SELECCION *********
+		#poblacion = seleccion(poblacion,fit)
 		print ("************************************* Cruzamiento **************************************")
 
 		poblacion=cruzamiento(poblacion,fit,n_participantes)
@@ -415,7 +430,7 @@ max_rutas=n_nodos-1
 min_rutas=2
 nodos_minimo=2
 n_individuos=25
-f_ecologia=0
+f_ecologia=0.1
 n_participantes=3
 pm=0.3
 pc=0.5
@@ -427,7 +442,5 @@ for i in range(n_nodos):
 			valor = pasajeros[i][j] / distancias[i][j]
 			valores.append(valor)
 
-print
-poblacion,fit=generar_poblacion(n_individuos)
-#algorimo_genetico(n_individuos,f_ecologia,n_participantes,n_iteraciones,poblacion,fit)
+algorimo_genetico(n_individuos,n_participantes,n_iteraciones)
 
